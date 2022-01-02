@@ -1,5 +1,5 @@
 {
-    "name": "lexing2008/yii2-hierarchy",
+    "name": "lexing2008/yii2-hierarchy-list",
     "description": "Allows you to work with hierarchical lists (structures), for example, create a hierarchical menu, hierarchical categories",
     "type": "yii2-extension",
     "keywords": ["yii2","extension"," hierarhy"," hierarhy list"," yii2  categories"," yii2 category"],
