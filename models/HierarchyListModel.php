@@ -78,7 +78,7 @@ abstract class HierarchyListModel extends BaseObject
      * @param array $config конфиг
      * @param bool $autoLoad автоматическая загрука из кэша, если не получилось из кэша, то из БД при создании объекта
      */
-    public function __construct(array $config = [], bool $autoLoad = true)
+    public function __construct(array $config = [], bool $autoLoad = false)
     {
         parent::__construct($config);
         // подгружаем всю информацию
