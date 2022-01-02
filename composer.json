@@ -1,0 +1,23 @@
+{
+    "name": "lexing2008/yii2-hierarchy",
+    "description": "Allows you to work with hierarchical lists (structures), for example, create a hierarchical menu, hierarchical categories",
+    "type": "yii2-extension",
+    "keywords": ["yii2","extension"," hierarhy"," hierarhy list"," yii2  categories"," yii2 category"],
+    "license": "BSD-4-Clause",
+    "authors": [
+        {
+            "name": "Alexey Sogoyan",
+            "email": "info@tof.bv",
+            "homepage": "https://www.linkedin.com/in/alexey-sogoyan/",
+            "role": "Full Stack php Developer"
+        }
+    ],
+    "require": {
+        "yiisoft/yii2": "~2.0.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "lexing2008\\yii2HierarchyList\\": ""
+        }
+    }
+}
