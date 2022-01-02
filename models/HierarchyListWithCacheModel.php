@@ -10,7 +10,7 @@ use Yii;
  * @author Alexey Sogoyan
  * @site https://www.linkedin.com/in/alexey-sogoyan/
  */
-abstract class HierarchyListWithFileCacheModel extends HierarchyListModel
+abstract class HierarchyListWithCacheModel extends HierarchyListModel
 {
     /**
      * Получение элементов иерархического списка из файлового кэша
@@ -27,5 +27,13 @@ abstract class HierarchyListWithFileCacheModel extends HierarchyListModel
     public function saveItemsToCache()
     {
         Yii::$app->cache->set( $this->getCacheKey() );
+    }
+
+    /**
+     * @return mixed|void удаление кэша
+     */
+    public function deleteCache()
+    {
+        Yii::$app->cache->delete( $this->getCacheKey() );
     }
 }

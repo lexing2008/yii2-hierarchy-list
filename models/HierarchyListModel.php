@@ -74,6 +74,11 @@ abstract class HierarchyListModel extends BaseObject
     abstract public function saveItemsToCache();
 
     /**
+     * @return mixed удаляет кэш
+     */
+    abstract public function deleteCache();
+
+    /**
      * Конструктор класса
      * @param array $config конфиг
      * @param bool $autoLoad автоматическая загрука из кэша, если не получилось из кэша, то из БД при создании объекта
@@ -106,9 +111,8 @@ abstract class HierarchyListModel extends BaseObject
         if(!$this->loadFromCache()){
             // подгружаем из таблицы
             $this->loadFromTable();
-
-            $this->flagLoaded = true;
         }
+        $this->flagLoaded = true;
     }
 
     /**
