@@ -18,7 +18,9 @@ abstract class HierarchyListWithCacheModel extends HierarchyListModel
      */
     public function getItemsFromCache(): array
     {
-        return (array)Yii::$app->cache->get( $this->getCacheKey() );
+        $data = Yii::$app->cache->get( $this->getCacheKey() );
+
+        return empty($data) ? [] : $data;
     }
 
     /**
