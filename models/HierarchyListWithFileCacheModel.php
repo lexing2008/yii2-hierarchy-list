@@ -2,6 +2,8 @@
 
 namespace lexing2008\yii2HierarchyList\models;
 
+use Yii;
+
 /**
  * Модель HierarchyListWithFileCacheModel
  * позволяет работать с иерархическим списком рубрик
@@ -16,16 +18,7 @@ abstract class HierarchyListWithFileCacheModel extends HierarchyListModel
      */
     public function getItemsFromCache(): array
     {
-        $items = [];
-        // путь к файлу кэша
-        $path = $this->getCacheFilePath();
-        // проверяем существование файла
-        if(file_exists($path)){
-            // получаем элементы иерархического списка
-            $items = json_decode(file_get_contents($path), true);
-        }
-
-        return $items;
+        return (array)Yii::$app->cache->get( $this->getCacheKey() );
     }
 
     /**
@@ -33,9 +26,6 @@ abstract class HierarchyListWithFileCacheModel extends HierarchyListModel
      */
     public function saveItemsToCache()
     {
-        // преобразуем массив элементов иерархического списка в json
-        $content = json_encode($this->items);
-        // записываем кэш в файл
-        file_put_contents($this->getCacheFilePath(), $content);
+        Yii::$app->cache->set( $this->getCacheKey() );
     }
 }

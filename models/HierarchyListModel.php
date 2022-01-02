@@ -48,10 +48,10 @@ abstract class HierarchyListModel extends BaseObject
     protected $indexById = [];
 
     /**
-     * Возвращает путь к кэшу
+     * Возвращает ключ кэша
      * @return string
      */
-    abstract public function getCacheFilePath(): string;
+    abstract public function getCacheKey(): string;
 
     /**
      * Получение элементов иерархического списка из таблицы
@@ -70,18 +70,26 @@ abstract class HierarchyListModel extends BaseObject
 
     /**
      * Конструктор класса
+     * @param array $config конфиг
      * @param bool $autoLoad автоматическая загрука из кэша, если не получилось из кэша, то из БД при создании объекта
      */
-    public function __construct(bool $autoLoad = true, $config = [])
+    public function __construct(array $config = [], bool $autoLoad = true)
     {
         parent::__construct($config);
         // подгружаем всю информацию
         if ($autoLoad){
-            // если не удалось подгрузить из кэша
-            if(!$this->loadFromCache()){
-                // подгружаем из таблицы
-                $this->loadFromTable();
-            }
+            $this->load();
+        }
+    }
+
+    /**
+     * Подгружаем данные
+     */
+    public function load() {
+        // если не удалось подгрузить из кэша
+        if(!$this->loadFromCache()){
+            // подгружаем из таблицы
+            $this->loadFromTable();
         }
     }
 
