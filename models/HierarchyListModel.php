@@ -47,6 +47,11 @@ abstract class HierarchyListModel extends BaseObject
      */
     protected $indexById = [];
 
+    /*
+     * Флаг того, что данные были подгружены
+     */
+    protected $flagLoaded = false;
+
     /**
      * Возвращает ключ кэша
      * @return string
@@ -83,6 +88,17 @@ abstract class HierarchyListModel extends BaseObject
     }
 
     /**
+     * Инициализирует (подгружает данные), если ранее не подгружал
+     */
+    public function init(): self {
+        if(!$this->flagLoaded){
+            $this->load();
+        }
+
+        return $this;
+    }
+
+    /**
      * Подгружаем данные
      */
     public function load() {
@@ -90,6 +106,8 @@ abstract class HierarchyListModel extends BaseObject
         if(!$this->loadFromCache()){
             // подгружаем из таблицы
             $this->loadFromTable();
+
+            $this->flagLoaded = true;
         }
     }
 
