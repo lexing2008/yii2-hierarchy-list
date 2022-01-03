@@ -28,7 +28,7 @@ abstract class HierarchyListWithCacheModel extends HierarchyListModel
      */
     public function saveItemsToCache()
     {
-        Yii::$app->cache->set( $this->getCacheKey() );
+        Yii::$app->cache->set( $this->getCacheKey(), $this->items );
     }
 
     /**

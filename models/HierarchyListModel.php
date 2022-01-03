@@ -44,13 +44,13 @@ abstract class HierarchyListModel extends BaseObject
      * Полe, содержащее parent_id
      * @var string
      */
-    public $fieldParentId = 'parent_id';
+    public $fieldParentIdName = 'parent_id';
 
     /**
      * Поле уровень вложенности
      * @var string
      */
-    public $fieldLevel = 'l';
+    public $fieldLevelName = 'level';
 
     /**
      * Количество элементов в $items. Вычисляется как счетчик. используется как счетчик
@@ -65,10 +65,10 @@ abstract class HierarchyListModel extends BaseObject
     public $fieldsForSearch = [];
 
     /**
-     * Содержит соответствия ID => Номер позиции в $this->>items
+     * Содержит соответствия ID или alias или другое поле => Номер позиции в $this->>items
      * @var array
      */
-    protected $mapByid = [];
+    protected $map = [];
 
     /*
      * Флаг того, что данные были подгружены
@@ -116,10 +116,7 @@ abstract class HierarchyListModel extends BaseObject
     {
         parent::__construct($config);
 
-        if(!in_array($this->fieldIdName, $this->fieldsForSearch)){
-            $this->fieldsForSearch[] = $this->fieldIdName;
-        }
-
+        $this->fieldsForSearch[] = $this->fieldIdName;
         // подгружаем всю информацию
         if ($this->autoLoad){
             $this->load();
@@ -129,7 +126,7 @@ abstract class HierarchyListModel extends BaseObject
     /**
      * Инициализирует (подгружает данные), если ранее не подгружал
      */
-    public function init(): self {
+    public function initialize(): self {
         if(!$this->flagLoaded){
             $this->load();
         }
@@ -146,6 +143,7 @@ abstract class HierarchyListModel extends BaseObject
             // подгружаем из таблицы
             $this->loadFromTable();
         }
+
         $this->flagLoaded = true;
     }
 
@@ -156,7 +154,6 @@ abstract class HierarchyListModel extends BaseObject
     public function loadFromCache(): bool
     {
         $this->items = $this->getItemsFromCache();
-
         $this->createMaps();
 
         return !empty($this->items);
@@ -168,12 +165,13 @@ abstract class HierarchyListModel extends BaseObject
     protected function createMaps(){
         // создаем поля карты соответствий
         foreach($this->fieldsForSearch as $fieldName){
-            $this->{'mapBy' . $fieldName} = [];
+            $this->map[$fieldName] = [];
         }
+
         // заполняем карты соответствий
         foreach($this->fieldsForSearch as $fieldName){
             foreach ($this->items as $key => &$item){
-                $this->{'mapBy' . $fieldName}[ $item[$fieldName] ] = $key;
+                $this->map[$fieldName][ $item[$fieldName] ] = $key;
             }
         }
     }
@@ -194,8 +192,7 @@ abstract class HierarchyListModel extends BaseObject
 
         // устанавливаем текущее количество в нуль
         $this->currentCountItems = 0;
-        // учищаем индекс по ID
-        $this->mapByid = [];
+
         // приводим в структурированный вид иерархический список
         $this->nextItem( self::MAIN_PARENT_ID ); // (Родитель) pid = 0; (Уровень вложенности) level = 0; Начинаем отсчет уровня вложенности
         // сохраняем в кэш
@@ -212,14 +209,14 @@ abstract class HierarchyListModel extends BaseObject
         // просматриваем весь массив
         foreach ($this->category as $key => $val) {
             // элемент пренадлежит родителю
-            if ($val[ $this->fieldParentId ] == $parentId) {
+            if ($val[ $this->fieldParentIdName ] == $parentId) {
                 // добавляем текущий элемент в наш массив упорядоченных элементов
                 $this->items[$this->currentCountItems]          = $val;
-                $this->items[$this->currentCountItems][$this->fieldLevel] = $level;
+                $this->items[$this->currentCountItems][$this->fieldLevelName] = $level;
 
                 // создаем карту соотвествий поля  позиции элемента
                 foreach($this->fieldsForSearch as $fieldName){
-                    $this->{'mapBy' . $fieldName}[ $val[$fieldName] ] = $this->currentCountItems;
+                    $this->map[$fieldName][ $val[$fieldName] ] = $this->currentCountItems;
                 }
 
                 // удаляем текущий элемент из массива
@@ -247,11 +244,38 @@ abstract class HierarchyListModel extends BaseObject
         }
 
         $arr        = [];
-        $i          = $this->{'mapBy' . $byField}[ $parentId ];
-        $flagLevel  = $this->items[$i][$this->fieldLevel];
+        $i          = $this->map[$byField][ $parentId ];
+        $flagLevel  = $this->items[$i][$this->fieldLevelName];
         ++$i;
         $count = count($this->items);
-        while ($i < $count && $this->items[$i][$this->fieldLevel] > $flagLevel) {
+        while ($i < $count && $this->items[$i][$this->fieldLevelName] > $flagLevel) {
+            $arr[] = $this->items[$i];
+            ++$i;
+        }
+        return $arr;
+    }
+
+    /**
+     * Возвращает заданный элемент и массив всех потомков заданного элемента
+     * @param mixed $parentId  идентификатор родителя
+     * @return array массив потомков
+     */
+    public function getItemWithChildren($parentId = 0, string $byField = self::FIELD_ID): array
+    {
+        // проверяем, доступен ли поиск по данному полю
+        $this->checkField($byField);
+
+        if($byField == self::FIELD_ID &&  $parentId == self::MAIN_PARENT_ID){
+            return $this->items;
+        }
+
+        $arr        = [];
+        $i          = $this->map[$byField][ $parentId ];
+        $flagLevel  = $this->items[$i][$this->fieldLevelName];
+        $arr[]      = $this->items[$i];
+        ++$i;
+        $count = count($this->items);
+        while ($i < $count && $this->items[$i][$this->fieldLevelName] > $flagLevel) {
             $arr[] = $this->items[$i];
             ++$i;
         }
@@ -276,14 +300,14 @@ abstract class HierarchyListModel extends BaseObject
             $i     = 0;
             $level = 1;
         } else {
-            $i          = $this->{'mapBy' . $byField}[ $parentId ];
-            $level      = $this->items[$i][$this->fieldLevel]+1;
+            $i          = $this->map[$byField][ $parentId ];
+            $level      = $this->items[$i][$this->fieldLevelName]+1;
             ++$i;
         }
 
         $count = count($this->items);
-        while ($i < $count && $this->items[$i][$this->fieldLevel] >= $level) {
-            if($this->items[$i][$this->fieldLevel] == $level) {
+        while ($i < $count && $this->items[$i][$this->fieldLevelName] >= $level) {
+            if($this->items[$i][$this->fieldLevelName] == $level) {
                 $arr[] = $this->items[$i];
             }
             ++$i;
@@ -302,7 +326,7 @@ abstract class HierarchyListModel extends BaseObject
         // проверяем, доступен ли поиск по данному полю
         $this->checkField($byField);
 
-        return $this->items[ $this->{'mapBy'.$byField}[$id] ];
+        return $this->items[ $this->map[$byField][$id] ];
     }
 
     /**
@@ -316,9 +340,9 @@ abstract class HierarchyListModel extends BaseObject
         // проверяем, доступен ли поиск по данному полю
         $this->checkField($byField);
 
-        $parentId = $this->items[ $this->{'mapBy'.$byField}[$id] ][ $this->fieldParentId ];
+        $parentId = $this->items[ $this->map[$byField][$id] ][ $this->fieldParentIdName ];
 
-        return $this->items[ $this->{'mapBy'.$this->fieldIdName}[$parentId] ];
+        return $this->items[ $this->map[$this->fieldIdName][$parentId] ];
     }
 
     /**
@@ -334,10 +358,10 @@ abstract class HierarchyListModel extends BaseObject
 
         $parents = [];
 
-        $parentId =  $this->items[ $this->{'mapBy'.$byField}[$id] ][$this->fieldParentId];
-        while( $parent = $this->items[ $this->{'mapBy'.$this->fieldIdName}[$parentId] ] ){
+        $parentId =  $this->items[ $this->map[$byField][$id] ][$this->fieldParentIdName];
+        while( $parent = $this->items[ $this->map[$this->fieldIdName][$parentId] ] ){
             $parents[]  = $parent;
-            $parentId   = $parent[$this->fieldIdName];
+            $parentId   = $parent[$this->fieldParentIdName];
         }
 
         return $parents;
@@ -356,10 +380,15 @@ abstract class HierarchyListModel extends BaseObject
 
         $items = [];
 
-        $parentId = $this->items[ $this->{'mapBy'.$byField}[$id] ][$this->fieldIdName];
-        while( $parent = $this->items[ $this->{'mapBy'.$this->fieldIdName}[$parentId] ] ){
+
+        $parentId = $this->items[ $this->map[$byField][$id] ][$this->fieldIdName];
+        if(empty($parentId)){
+            return [];
+        }
+
+        while( !empty($parent = $this->items[ $this->map[$this->fieldIdName][$parentId] ]) ){
             $items[]    = $parent;
-            $parentId   = $parent[$this->fieldIdName];
+            $parentId   = $parent[$this->fieldParentIdName];
         }
 
         return $items;
@@ -381,7 +410,17 @@ abstract class HierarchyListModel extends BaseObject
     protected function checkField(string $fieldName)
     {
         if(!in_array($fieldName, $this->fieldsForSearch)){
-            throw new Exception("Field $fieldName not found in $this->fieldsForSearch. Please, add field in $this->fieldsForSearch.");
+            throw new \Exception("Field $fieldName not found in \$this->fieldsForSearch. Please, add field in \$this->fieldsForSearch.");
         }
+    }
+
+    public function __set($name, $value)
+    {
+
+    }
+
+    public function __get($name)
+    {
+
     }
 }
