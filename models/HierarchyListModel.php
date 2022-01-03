@@ -116,7 +116,9 @@ abstract class HierarchyListModel extends BaseObject
     {
         parent::__construct($config);
 
-        $this->fieldsForSearch[] = $this->fieldIdName;
+        if(!in_array($this->fieldIdName, $this->fieldsForSearch)){
+            $this->fieldsForSearch[] = $this->fieldIdName;
+        }
 
         // подгружаем всю информацию
         if ($this->autoLoad){
