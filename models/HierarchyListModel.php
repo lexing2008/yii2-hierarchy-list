@@ -6,7 +6,7 @@ use yii\base\BaseObject;
 
 /**
  * Модель HierarchyListModel
- * позволяет работать с иерархическим списком
+ * позволяет работать с иерархическим списком неограниченной вложенности
  * @author Alexey Sogoyan
  * @site https://www.linkedin.com/in/alexey-sogoyan/
  */
@@ -38,7 +38,7 @@ abstract class HierarchyListModel extends BaseObject
      * Упорядоченные по дереву элементы
      * @var array
      */
-    public $items;
+    public $items = [];
 
     /**
      * Полe, содержащее parent_id
@@ -186,8 +186,8 @@ abstract class HierarchyListModel extends BaseObject
         $rows = count($records);
         $this->category = [];
         $this->items = [];
-        for ($i = 0; $i < $rows; ++$i) {
-            $this->category[$records[$i][$this->fieldIdName]] = $records[$i];
+        foreach ($records as $record){
+            $this->category[$record[$this->fieldIdName]] = $record;
         }
 
         // устанавливаем текущее количество в нуль
@@ -232,6 +232,7 @@ abstract class HierarchyListModel extends BaseObject
     /**
      * Возвращает массив всех потомков заданного элемента
      * @param int $parentId  идентификатор родителя
+     * @param string $byField поле по которому ищут родителя. По умолчанию 'id'
      * @return array массив потомков
      */
     public function getChildren($parentId = 0, string $byField = self::FIELD_ID): array
@@ -258,6 +259,7 @@ abstract class HierarchyListModel extends BaseObject
     /**
      * Возвращает заданный элемент и массив всех потомков заданного элемента
      * @param mixed $parentId  идентификатор родителя
+     * @param string $byField поле по которому ищут родителя. По умолчанию 'id'
      * @return array массив потомков
      */
     public function getItemWithChildren($parentId = 0, string $byField = self::FIELD_ID): array
@@ -286,7 +288,7 @@ abstract class HierarchyListModel extends BaseObject
     /**
      * Возвращает массив всех потомков первого уровня относительно родителя
      * @param int $parentId значение поля родителя
-     * @param string $byField
+     * @param string $byField поле по которому ищут родителя. По умолчанию 'id'
      * @return array
      */
     public function getChildrenFirstLevel($parentId = 0, string $byField = self::FIELD_ID): array
@@ -298,7 +300,7 @@ abstract class HierarchyListModel extends BaseObject
 
         if($byField == self::FIELD_ID && $parentId == self::MAIN_PARENT_ID){
             $i     = 0;
-            $level = 1;
+            $level = 0;
         } else {
             $i          = $this->map[$byField][ $parentId ];
             $level      = $this->items[$i][$this->fieldLevelName]+1;
@@ -316,9 +318,9 @@ abstract class HierarchyListModel extends BaseObject
     }
 
     /**
-     * Возвращает родителя элемента
+     * Возвращает элемент
      * @param $id значение поля
-     * @param string $byField название поля
+     * @param string $byField поле по которому ищут родителя. По умолчанию 'id'
      * @return array|null
      */
     public function getItem($id, string $byField = self::FIELD_ID): ?array
@@ -332,7 +334,7 @@ abstract class HierarchyListModel extends BaseObject
     /**
      * Возвращает родителя элемента
      * @param $id значение поля
-     * @param string $byField название поля
+     * @param string $byField поле по которому ищут родителя. По умолчанию 'id'
      * @return array|null
      */
     public function getParent($id, string $byField = self::FIELD_ID): ?array
@@ -348,7 +350,7 @@ abstract class HierarchyListModel extends BaseObject
     /**
      * Возвращает всех родителей элемента
      * @param $id значение поля
-     * @param string $byField название поля
+     * @param string $byField поле по которому ищут родителя. По умолчанию 'id'
      * @return array|null
      */
     public function getParents($id, string $byField = self::FIELD_ID): ?array
@@ -370,7 +372,7 @@ abstract class HierarchyListModel extends BaseObject
     /**
      * Возвращает элемент вместе с родительскими элементами
      * @param $id значение поля
-     * @param string $byField имя поля
+     * @param string $byField поле по которому ищут родителя. По умолчанию 'id'
      * @return array|null
      */
     public function getItemWithParents($id, string $byField = self::FIELD_ID): ?array
@@ -404,6 +406,39 @@ abstract class HierarchyListModel extends BaseObject
     }
 
     /**
+     * Возвращает только элементы и их потомки для которых callback функция $callbackFunction возвращает true
+     * Пример callbackFunction:
+     * function(&$item) {
+     *      return $item['status'] == 1;
+     * }
+     * @param $callbackFunction callback функция
+     * @return array
+     */
+    public function getAllItemsByCallback($callbackFunction): array
+    {
+        $data = [];
+        if(empty($this->items))
+            return $data;
+
+        $size = count($this->items);
+        for ($i = 0; $i < $size; ++$i) {
+
+            if( $callbackFunction($this->items[$i]) ){
+                $data[] = $this->items[$i];
+            } else {
+                $level = $this->items[$i][ $this->fieldLevelName ];
+                for ($j = $i + 1; $j < $size; ++$j) {
+                    if ($this->items[$j][ $this->fieldLevelName ] <= $level) {
+                        break;
+                    }
+                }
+                $i = $j - 1;
+            }
+        }
+        return $data;
+    }
+
+    /**
      * Проверяет наличие поля в $this->fieldsForSearch
      * @param string $fieldName имя поля
      */
@@ -414,11 +449,17 @@ abstract class HierarchyListModel extends BaseObject
         }
     }
 
+    /**
+     * Для избежания конфликта, переопределяем этот метод BaseObject
+     */
     public function __set($name, $value)
     {
 
     }
 
+    /**
+     * Для избежания конфликта, переопределяем этот метод BaseObject
+     */
     public function __get($name)
     {
 
