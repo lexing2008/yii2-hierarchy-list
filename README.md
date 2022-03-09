@@ -6,6 +6,8 @@ Allows you to work with hierarchical lists (structures), for example, create a h
 load() - Подгружает данные вначале из кэша, если не получилось, то из таблицы
 loadFromCache() - Подгружает из кэша данные иерархии
 loadFromTable() - Загрузка информации из БД и формирование правильной иерархической структуры
+saveItemsToCache() - Сохранение иерархического списка в кэш
+deleteCache() - Удаление кэша
 getChildren($parentId = 0, string $byField = self::FIELD_ID): array - получаем всех потомков родителя. Ищет родителя по умолчанию по 'id'
 getItemWithChildren($parentId = 0, string $byField = self::FIELD_ID): array - Возвращает заданный элемент и массив всех потомков заданного элемента. Ищет родителя по умолчанию по 'id'
 getChildrenFirstLevel($parentId = 0, string $byField = self::FIELD_ID): array - Возвращает массив всех потомков первого уровня относительно родителя. Ищет родителя по умолчанию по 'id'
